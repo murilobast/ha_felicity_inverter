@@ -27,17 +27,13 @@ from .entity import FelicityInverterEntity
 from .register_map import SETTINGS_REGISTERS, STATUS_REGISTERS
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FelicitySensorDescription(SensorEntityDescription):
     block: str
     address: int
     field_name: str
     unit: str
     note: str
-    entity_category: EntityCategory | None = None
-    device_class: SensorDeviceClass | None = None
-    state_class: SensorStateClass | None = None
-    suggested_display_precision: int | None = None
 
 
 STATUS_SENSOR_META = {

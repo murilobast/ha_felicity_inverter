@@ -23,13 +23,9 @@ from .coordinator import FelicityInverterDataCoordinator
 from .entity import FelicityInverterEntity
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FelicityNumberDescription(NumberEntityDescription):
     field_name: str
-    device_class: NumberDeviceClass | None = None
-    entity_category: EntityCategory | None = None
-    native_unit_of_measurement: str | None = None
-    mode: NumberMode = NumberMode.BOX
 
 
 NUMBER_DESCRIPTIONS = (
