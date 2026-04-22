@@ -1,6 +1,6 @@
 # Felicity Inverter for Home Assistant
 
-[![Open your Home Assistant instance and open this repository inside HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmurilobast%2Fha_felicity_inverter&category=integration)
+[![Open your Home Assistant instance and open this repository inside HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=murilobast&repository=ha_felicity_inverter&category=integration)
 
 Local Home Assistant integration for Felicity Solar inverters that expose Modbus RTU over the RS232 RJ45 port.
 
