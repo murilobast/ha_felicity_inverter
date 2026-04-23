@@ -50,3 +50,8 @@ class FelicityInverterDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         async with self._lock:
             data = await self.hass.async_add_executor_job(self.client.set_max_ac_charge_current, amps)
         self.async_set_updated_data(data)
+
+    async def async_write_setting(self, field_name: str, value: int | float) -> None:
+        async with self._lock:
+            data = await self.hass.async_add_executor_job(self.client.write_setting, field_name, value)
+        self.async_set_updated_data(data)

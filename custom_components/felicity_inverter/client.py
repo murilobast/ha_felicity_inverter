@@ -167,8 +167,13 @@ class FelicityInverterClient:
         if amps < 0:
             raise FelicityInverterError("max_ac_charge_current must be non-negative")
 
+        return self.write_setting("max_ac_charge_current", amps)
+
+    def write_setting(self, field_name: str, value: int | float) -> dict[str, Any]:
+        address, encoded = self._encode_setting_value(field_name, value)
+
         with self._open_serial() as serial_fd:
-            self._write_single_register(serial_fd, MAX_AC_CHARGE_CURRENT_REGISTER, amps)
+            self._write_single_register(serial_fd, address, encoded)
             time.sleep(1.0)
             status = self._read_block(
                 serial_fd, STATUS_BLOCK_START, STATUS_BLOCK_COUNT, STATUS_REGISTERS, "status"
@@ -178,6 +183,23 @@ class FelicityInverterClient:
             )
 
         return self._payload(status, settings)
+
+    def _encode_setting_value(self, field_name: str, value: int | float) -> tuple[int, int]:
+        for address, (name, scale, _unit, _note) in SETTINGS_REGISTERS.items():
+            if name != field_name:
+                continue
+
+            if scale == 1:
+                encoded = int(round(float(value)))
+            else:
+                encoded = int(round(float(value) / float(scale)))
+
+            if encoded < 0 or encoded > 0xFFFF:
+                raise FelicityInverterError(f"Value out of range for {field_name}: {value}")
+
+            return address, encoded
+
+        raise FelicityInverterError(f"Unknown writable setting: {field_name}")
 
     def _payload(self, status: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
         return {

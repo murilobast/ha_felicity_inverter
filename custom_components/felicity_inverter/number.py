@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfElectricCurrent
+from homeassistant.const import UnitOfElectricCurrent, UnitOfElectricPotential
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityCategory
@@ -33,6 +33,46 @@ class FelicityNumberSpec:
 
 NUMBER_SPECS = (
     FelicityNumberSpec(
+        field_name="discharge_cutoff_voltage",
+        name="Discharge Cutoff Voltage",
+        native_min_value=40.0,
+        native_max_value=60.0,
+        native_step=0.1,
+        device_class=NumberDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+    ),
+    FelicityNumberSpec(
+        field_name="bulk_charge_voltage",
+        name="Bulk Charge Voltage",
+        native_min_value=40.0,
+        native_max_value=60.0,
+        native_step=0.1,
+        device_class=NumberDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+    ),
+    FelicityNumberSpec(
+        field_name="float_charge_voltage",
+        name="Float Charge Voltage",
+        native_min_value=40.0,
+        native_max_value=60.0,
+        native_step=0.1,
+        device_class=NumberDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+    ),
+    FelicityNumberSpec(
+        field_name="max_charge_current",
+        name="Max Charge Current",
+        native_min_value=0,
+        native_max_value=100,
+        native_step=1,
+        device_class=NumberDeviceClass.CURRENT,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+    ),
+    FelicityNumberSpec(
         field_name="max_ac_charge_current",
         name="Max Grid Charge Current",
         native_min_value=0,
@@ -41,6 +81,26 @@ NUMBER_SPECS = (
         device_class=NumberDeviceClass.CURRENT,
         entity_category=EntityCategory.CONFIG,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+    ),
+    FelicityNumberSpec(
+        field_name="back_to_grid_voltage",
+        name="Back To Grid Voltage",
+        native_min_value=40.0,
+        native_max_value=60.0,
+        native_step=0.1,
+        device_class=NumberDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+    ),
+    FelicityNumberSpec(
+        field_name="back_to_battery_voltage",
+        name="Back To Battery Voltage",
+        native_min_value=40.0,
+        native_max_value=60.0,
+        native_step=0.1,
+        device_class=NumberDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     ),
 )
 
@@ -85,7 +145,7 @@ class FelicityWritableNumber(FelicityInverterEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Write a new register value."""
         try:
-            await self.coordinator.async_set_max_ac_charge_current(int(value))
+            await self.coordinator.async_write_setting(self._spec.field_name, value)
         except FelicityInverterError as err:
             raise HomeAssistantError(str(err)) from err
 
