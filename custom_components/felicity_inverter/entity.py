@@ -22,10 +22,23 @@ class FelicityInverterEntity(CoordinatorEntity[FelicityInverterDataCoordinator])
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return device info for the inverter."""
+        """Return device info for the configured device."""
         connection = self.coordinator.data["connection"]
+        if self.coordinator.device_type == "battery":
+            host = connection.get("host") or self.coordinator.wifi_battery_host or "battery"
+            port = connection.get("port") or self.coordinator.wifi_battery_port or 53970
+            subtype = connection.get("subtype")
+            name = connection.get("name") or f"Local Felicity Battery {host}"
+            return DeviceInfo(
+                identifiers={(DOMAIN, f"battery:{host}:{port}")},
+                manufacturer="Felicity Solar",
+                model=f"FLA WiFi Battery {subtype}" if subtype else "FLA WiFi Battery",
+                name=name,
+                serial_number=connection.get("device_sn"),
+            )
+
         device = connection["device"]
-        name = connection.get("name") or f"Felicity Inverter {basename(device)}"
+        name = connection.get("name") or f"Local Felicity Inverter {basename(device)}"
         return DeviceInfo(
             identifiers={(DOMAIN, device)},
             manufacturer="Felicity Solar",

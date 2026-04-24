@@ -33,6 +33,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up the inverter mode select."""
     coordinator: FelicityInverterDataCoordinator = hass.data[DOMAIN][entry.entry_id]
+    if not coordinator.has_inverter:
+        return
     async_add_entities(
         [
             FelicityModeSelect(coordinator, entry.entry_id),

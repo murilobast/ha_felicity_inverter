@@ -8,8 +8,21 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
 from .client import FelicityInverterClient
-from .const import CONF_DEVICE, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN, PLATFORMS
+from .const import (
+    CONF_DEVICE_TYPE,
+    CONF_DEVICE,
+    CONF_SCAN_INTERVAL,
+    CONF_WIFI_BATTERY_HOST,
+    CONF_WIFI_BATTERY_PORT,
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_WIFI_BATTERY_PORT,
+    DEVICE_TYPE_BATTERY,
+    DEVICE_TYPE_INVERTER,
+    DOMAIN,
+    PLATFORMS,
+)
 from .coordinator import FelicityInverterDataCoordinator
+from .wifi_battery import FelicityWifiBatteryClient
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -17,16 +30,50 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate older config entries to the device-type model."""
+    if entry.version >= 2:
+        return True
+
+    data = {**entry.data}
+    data.setdefault(CONF_DEVICE_TYPE, DEVICE_TYPE_INVERTER)
+    new_unique_id = entry.unique_id
+    if data[CONF_DEVICE_TYPE] == DEVICE_TYPE_INVERTER and CONF_DEVICE in data:
+        new_unique_id = f"{DEVICE_TYPE_INVERTER}:{data[CONF_DEVICE]}"
+    hass.config_entries.async_update_entry(entry, data=data, unique_id=new_unique_id, version=2)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Felicity inverter from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    client = FelicityInverterClient(
-        device=entry.data[CONF_DEVICE],
-    )
+    device_type = entry.data.get(CONF_DEVICE_TYPE, DEVICE_TYPE_INVERTER)
+    client = None
+    wifi_battery_client = None
+    if device_type == DEVICE_TYPE_INVERTER:
+        client = FelicityInverterClient(
+            device=entry.data[CONF_DEVICE],
+        )
+    else:
+        wifi_battery_host = entry.options.get(
+            CONF_WIFI_BATTERY_HOST,
+            entry.data.get(CONF_WIFI_BATTERY_HOST, ""),
+        ).strip()
+        wifi_battery_client = FelicityWifiBatteryClient(
+            host=wifi_battery_host,
+            port=int(
+                entry.options.get(
+                    CONF_WIFI_BATTERY_PORT,
+                    entry.data.get(CONF_WIFI_BATTERY_PORT, DEFAULT_WIFI_BATTERY_PORT),
+                )
+            ),
+        )
     coordinator = FelicityInverterDataCoordinator(
         hass=hass,
         client=client,
+        wifi_battery_client=wifi_battery_client,
+        device_type=device_type,
         scan_interval=entry.options.get(
             CONF_SCAN_INTERVAL,
             entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),

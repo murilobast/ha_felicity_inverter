@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
+    UnitOfTemperature,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfPower,
@@ -65,6 +67,129 @@ UNIT_MAP = {
 }
 
 
+@dataclass(frozen=True)
+class FelicityWifiBatterySensorSpec:
+    field_name: str
+    name: str
+    unit: str | None = None
+    device_class: SensorDeviceClass | None = None
+    state_class: SensorStateClass | None = None
+    suggested_display_precision: int | None = None
+    entity_category: EntityCategory | None = None
+
+
+WIFI_BATTERY_SENSOR_SPECS = (
+    FelicityWifiBatterySensorSpec(
+        field_name="soc",
+        name="SOC",
+        unit=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="voltage",
+        name="Voltage",
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="current",
+        name="Current",
+        unit=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="power",
+        name="Power",
+        unit=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="temperature_min",
+        name="Temperature Min",
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="temperature_max",
+        name="Temperature Max",
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="cell_voltage_min",
+        name="Cell Voltage Min",
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=3,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="cell_voltage_max",
+        name="Cell Voltage Max",
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=3,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="cell_voltage_delta",
+        name="Cell Voltage Delta",
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=3,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="cell_count",
+        name="Cell Count",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="parallel_modules",
+        name="Parallel Modules",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="state_code",
+        name="State Code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="warn_code",
+        name="Warning Code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="fault_code",
+        name="Fault Code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+    FelicityWifiBatterySensorSpec(
+        field_name="estate_code",
+        name="Estate Code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+)
+
+
 def _friendly_name(field_name: str) -> str:
     return field_name.replace("_", " ").replace("Pv", "PV").title().replace("Pv", "PV")
 
@@ -116,7 +241,14 @@ async def async_setup_entry(
 ) -> None:
     """Set up Felicity inverter sensors."""
     coordinator: FelicityInverterDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(FelicityRegisterSensor(coordinator, entry.entry_id, spec) for spec in SENSOR_SPECS)
+    entities: list[SensorEntity] = []
+    if coordinator.has_inverter:
+        entities.extend(FelicityRegisterSensor(coordinator, entry.entry_id, spec) for spec in SENSOR_SPECS)
+    if coordinator.device_type == "battery":
+        entities.extend(
+            FelicityWifiBatterySensor(coordinator, entry.entry_id, spec) for spec in WIFI_BATTERY_SENSOR_SPECS
+        )
+    async_add_entities(entities)
 
 
 class FelicityRegisterSensor(FelicityInverterEntity, SensorEntity):
@@ -158,3 +290,53 @@ class FelicityRegisterSensor(FelicityInverterEntity, SensorEntity):
     @property
     def _register_data(self) -> dict:
         return self.coordinator.data[self._spec.block]["registers_by_name"][self._spec.field_name]
+
+
+class FelicityWifiBatterySensor(FelicityInverterEntity, SensorEntity):
+    """Expose WiFi battery telemetry as Home Assistant sensors."""
+
+    def __init__(
+        self,
+        coordinator: FelicityInverterDataCoordinator,
+        entry_id: str,
+        spec: FelicityWifiBatterySensorSpec,
+    ) -> None:
+        super().__init__(coordinator, entry_id, f"wifi_battery_{spec.field_name}")
+        self._spec = spec
+        self._attr_has_entity_name = True
+        self._attr_name = spec.name
+        self._attr_native_unit_of_measurement = spec.unit
+        self._attr_device_class = spec.device_class
+        self._attr_state_class = spec.state_class
+        self._attr_entity_category = spec.entity_category
+        self._attr_suggested_display_precision = spec.suggested_display_precision
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.data.get("wifi_battery") is not None
+
+    @property
+    def native_value(self):
+        return self._wifi_battery_data["fields"].get(self._spec.field_name)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        fields = self._wifi_battery_data["fields"]
+        connection = self._wifi_battery_data["connection"]
+        return {
+            "wifi_host": connection.get("host") or self.coordinator.wifi_battery_host,
+            "wifi_port": connection.get("port") or self.coordinator.wifi_battery_port,
+            "wifi_sn": connection.get("wifi_sn"),
+            "device_sn": connection.get("device_sn"),
+            "battery_type": connection.get("type"),
+            "battery_subtype": connection.get("subtype"),
+            "max_cell_index": fields.get("max_cell_index"),
+            "min_cell_index": fields.get("min_cell_index"),
+        }
+
+    @property
+    def _wifi_battery_data(self) -> dict[str, Any]:
+        data = self.coordinator.data.get("wifi_battery")
+        if data is None:
+            return {"fields": {}, "connection": {}, "raw": {}}
+        return data

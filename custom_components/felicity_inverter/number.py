@@ -112,6 +112,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up writable number entities for the inverter."""
     coordinator: FelicityInverterDataCoordinator = hass.data[DOMAIN][entry.entry_id]
+    if not coordinator.has_inverter:
+        return
     async_add_entities(FelicityWritableNumber(coordinator, entry.entry_id, spec) for spec in NUMBER_SPECS)
 
 

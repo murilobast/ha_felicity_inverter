@@ -1,31 +1,49 @@
 {
-  "title": "Felicity Inverter",
+  "title": "Local Felicity",
   "config": {
     "step": {
       "user": {
-        "title": "Connect to Felicity inverter",
+        "title": "Choose Local Felicity device",
+        "data": {
+          "device_type": "Device type"
+        }
+      },
+      "inverter": {
+        "title": "Connect to Local Felicity inverter",
         "description": "Select the local serial device exposed to Home Assistant. Detected devices matching `{device_glob}`: {device_count}.",
         "data": {
           "name": "Name",
           "device": "Serial device",
           "scan_interval": "Scan interval (seconds)"
         }
+      },
+      "battery": {
+        "title": "Connect to Local Felicity battery",
+        "description": "Enter the local WiFi host for the battery monitor.",
+        "data": {
+          "name": "Name",
+          "wifi_battery_host": "Battery WiFi host",
+          "wifi_battery_port": "Battery WiFi port",
+          "scan_interval": "Scan interval (seconds)"
+        }
       }
     },
     "error": {
-      "cannot_connect": "Unable to connect to the inverter on the selected serial device",
+      "cannot_connect": "Unable to connect to the selected Felicity device",
       "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "This serial device is already configured"
+      "already_configured": "This device is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Felicity inverter options",
+        "title": "Local Felicity device options",
         "data": {
-          "scan_interval": "Scan interval (seconds)"
+          "scan_interval": "Scan interval (seconds)",
+          "wifi_battery_host": "Battery WiFi host",
+          "wifi_battery_port": "Battery WiFi port"
         }
       }
     }

@@ -1,7 +1,7 @@
 {
   "domain": "felicity_inverter",
-  "name": "Felicity Inverter",
-  "version": "0.1.3",
+  "name": "Local Felicity",
+  "version": "0.3.2",
   "config_flow": true,
   "documentation": "https://github.com/murilobast/ha_felicity_inverter",
   "integration_type": "device",
