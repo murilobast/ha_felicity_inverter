@@ -190,14 +190,14 @@ class FelicityInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Return the options flow."""
-        return FelicityInverterOptionsFlowHandler(config_entry)
+        return FelicityInverterOptionsFlowHandler()
 
 
 class FelicityInverterOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for the Felicity inverter integration."""
 
-    def __init__(self, config_entry) -> None:
-        self.config_entry = config_entry
+    def __init__(self) -> None:
+        """Initialize the options flow."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Manage the integration options."""
